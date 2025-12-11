@@ -33,8 +33,7 @@
     Switch parameter to enable logging to file. Logging is disabled by default.
 
 .PARAMETER IncludeNonInteractive
-    Switch parameter to include non-interactive sign-in logs. Requires the beta endpoint.
-    Note: Beta endpoints are subject to change and not recommended for production use.
+    Switch parameter to include non-interactive sign-in logs in addition to interactive sign-ins.
 
 .PARAMETER SuccessfulOnly
     Switch parameter to filter for successful sign-ins only (errorCode eq 0).
@@ -55,7 +54,7 @@
 
 .EXAMPLE
     Get-ResourceAppSignInSummary -AppId "12345678-1234-1234-1234-123456789abc" -IncludeNonInteractive
-    Retrieves and summarizes both interactive and non-interactive sign-in logs using the beta endpoint
+    Retrieves and summarizes both interactive and non-interactive sign-in logs
 
 .EXAMPLE
     $results = Get-ResourceAppSignInSummary -AppId "12345678-1234-1234-1234-123456789abc" -DaysBack 14
@@ -130,15 +129,9 @@ function Get-ResourceAppSignInSummary {
 
     Write-Log "Starting sign-in log summarization for resource application(s): $($AppId -join ', ')"
 
-    # Determine which API version to use
-    $apiVersion = if ($IncludeNonInteractive) {
-        "beta"
-        Write-Log "Using beta endpoint to include non-interactive sign-ins" "WARNING"
-        Write-Log "Note: Beta endpoints are subject to change and not recommended for production use" "WARNING"
-    } else {
-        "v1.0"
-        Write-Log "Using v1.0 endpoint (interactive sign-ins only)"
-    }
+    # Always use beta endpoint
+    $apiVersion = "beta"
+    Write-Log "Using beta endpoint"
 
     # Calculate date range
     if ($StartDate) {
@@ -221,10 +214,13 @@ function Get-ResourceAppSignInSummary {
     # Build the base filter with date range and resource app ID
     $filter = "(createdDateTime ge $startDateFormatted and createdDateTime le $endDateFormatted) and $appIdFilter"
 
-    # Add signInEventTypes filter for non-interactive sign-ins when using beta endpoint
+    # Add signInEventTypes filter based on IncludeNonInteractive parameter
     if ($IncludeNonInteractive) {
         $filter += " and (signInEventTypes/any(t: t eq 'interactiveUser') or signInEventTypes/any(t: t eq 'nonInteractiveUser'))"
         Write-Log "Added signInEventTypes filter for both interactive and non-interactive sign-ins"
+    } else {
+        $filter += " and signInEventTypes/any(t: t eq 'interactiveUser')"
+        Write-Log "Added signInEventTypes filter for interactive sign-ins only"
     }
 
     # Add filter for successful sign-ins only if specified
@@ -287,6 +283,10 @@ function Get-ResourceAppSignInSummary {
     $summary = $signInLogs | Group-Object -Property @{Expression={$_.userPrincipalName}}, @{Expression={$_.resourceId}} | ForEach-Object {
         $firstLog = $_.Group[0]
 
+        # Get unique authentication requirements for this user/resource combination
+        $authReqs = $_.Group | ForEach-Object { $_.authenticationRequirement } | Where-Object { $_ } | Select-Object -Unique | Sort-Object
+        $uniqueAuthReqs = if ($authReqs) { $authReqs -join ', ' } else { '' }
+
         [PSCustomObject]@{
             UserPrincipalName = $firstLog.userPrincipalName
             UserDisplayName = $firstLog.userDisplayName
@@ -294,6 +294,7 @@ function Get-ResourceAppSignInSummary {
             ResourceDisplayName = $firstLog.resourceDisplayName
             ResourceId = $firstLog.resourceId
             SignInCount = $_.Count
+            AuthenticationRequirements = $uniqueAuthReqs
         }
     } | Sort-Object ResourceDisplayName, UserPrincipalName
 
