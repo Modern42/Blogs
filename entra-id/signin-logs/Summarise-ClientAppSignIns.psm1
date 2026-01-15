@@ -282,19 +282,32 @@ function Get-ClientAppSignInSummary {
 
     $summary = $signInLogs | Group-Object -Property @{Expression={$_.userPrincipalName}}, @{Expression={$_.appId}} | ForEach-Object {
         $firstLog = $_.Group[0]
+        $group = $_.Group
 
-        # Get unique authentication requirements for this user/app combination
-        $authReqs = $_.Group | ForEach-Object { $_.authenticationRequirement } | Where-Object { $_ } | Select-Object -Unique | Sort-Object
-        $uniqueAuthReqs = if ($authReqs) { $authReqs -join ', ' } else { '' }
+        # Collect unique 'set' values for output
+        $authReqSet = [System.Collections.Generic.HashSet[string]]::new()
+        $authProtocolSet = [System.Collections.Generic.HashSet[string]]::new()
+        $operatingSystemSet = [System.Collections.Generic.HashSet[string]]::new()
+        $browserSet = [System.Collections.Generic.HashSet[string]]::new()
+
+        foreach ($log in $group) {
+            if ($log.authenticationRequirement) { [void]$authReqSet.Add($log.authenticationRequirement) }
+            if ($log.authenticationProtocol) { [void]$authProtocolSet.Add($log.authenticationProtocol) }
+            if ($log.deviceDetail.operatingSystem) { [void]$operatingSystemSet.Add($log.deviceDetail.operatingSystem) }
+            if ($log.deviceDetail.browser) { [void]$browserSet.Add($log.deviceDetail.browser) }
+        }
 
         [PSCustomObject]@{
-            UserPrincipalName = $firstLog.userPrincipalName
-            UserDisplayName = $firstLog.userDisplayName
-            UserId = $firstLog.userId
-            AppDisplayName = $firstLog.appDisplayName
-            AppId = $firstLog.appId
-            SignInCount = $_.Count
-            AuthenticationRequirements = $uniqueAuthReqs
+            UserPrincipalName          = $firstLog.userPrincipalName
+            UserDisplayName            = $firstLog.userDisplayName
+            UserId                     = $firstLog.userId
+            AppDisplayName             = $firstLog.appDisplayName
+            AppId                      = $firstLog.appId
+            SignInCount                = $_.Count
+            AuthenticationRequirements = ($authReqSet | Sort-Object) -join ', '
+            AuthenticationProtocols    = ($authProtocolSet | Sort-Object) -join ', '
+            OperatingSystems           = ($operatingSystemSet | Sort-Object) -join ', '
+            Browsers                   = ($browserSet | Sort-Object) -join ', '
         }
     } | Sort-Object AppDisplayName, UserPrincipalName
 
