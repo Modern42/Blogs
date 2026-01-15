@@ -73,7 +73,10 @@ Import-Module $modulePath -Force
 
 # Define the Azure Resource Manager resource application ID
 $appIds = @(
-    "797f4846-ba00-4fd7-ba43-dac1f8f63013"   # Azure Resource Manager
+    "797f4846-ba00-4fd7-ba43-dac1f8f63013",   # Azure Resource Manager
+    "04b07795-8ddb-461a-bbee-02f9e1bf7b46",   # Azure command-line interface (Azure CLI)
+    "1950a258-227b-4e31-a9cf-717495945fc2",   # Azure PowerShell
+    "0c1307d4-29d6-4389-a11c-5cbe7f65d7fa"    # Azure mobile app
 )
 
 Write-Host "`nRetrieving sign-in logs for the following resource application:" -ForegroundColor Cyan

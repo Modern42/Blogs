@@ -298,12 +298,14 @@ function Get-ResourceAppSignInSummary {
         }
 
         [PSCustomObject]@{
-            UserPrincipalName = $firstLog.userPrincipalName
-            UserDisplayName = $firstLog.userDisplayName
-            UserId = $firstLog.userId
-            ResourceDisplayName = $firstLog.resourceDisplayName
-            ResourceId = $firstLog.resourceId
-            SignInCount = $_.Count
+            UserPrincipalName          = $firstLog.userPrincipalName
+            UserDisplayName            = $firstLog.userDisplayName
+            UserId                     = $firstLog.userId
+            ClientApp                  = $firstLog.appDisplayName
+            ClientAppId                = $firstLog.appId
+            ResourceDisplayName        = $firstLog.resourceDisplayName
+            ResourceId                 = $firstLog.resourceId
+            SignInCount                = $_.Count
             AuthenticationRequirements = ($authReqSet | Sort-Object) -join ', '
             AuthenticationProtocols    = ($authProtocolSet | Sort-Object) -join ', '
             OperatingSystems           = ($operatingSystemSet | Sort-Object) -join ', '

@@ -301,15 +301,17 @@ function Get-ClientAppSignInSummary {
             UserPrincipalName          = $firstLog.userPrincipalName
             UserDisplayName            = $firstLog.userDisplayName
             UserId                     = $firstLog.userId
-            AppDisplayName             = $firstLog.appDisplayName
-            AppId                      = $firstLog.appId
+            ClientApp                  = $firstLog.appDisplayName
+            ClientAppId                = $firstLog.appId
+            ResourceDisplayName        = $firstLog.resourceDisplayName
+            ResourceId                 = $firstLog.resourceId
             SignInCount                = $_.Count
             AuthenticationRequirements = ($authReqSet | Sort-Object) -join ', '
             AuthenticationProtocols    = ($authProtocolSet | Sort-Object) -join ', '
             OperatingSystems           = ($operatingSystemSet | Sort-Object) -join ', '
             Browsers                   = ($browserSet | Sort-Object) -join ', '
         }
-    } | Sort-Object AppDisplayName, UserPrincipalName
+    } | Sort-Object ClientApp, UserPrincipalName
 
     # Export to CSV
     try {
